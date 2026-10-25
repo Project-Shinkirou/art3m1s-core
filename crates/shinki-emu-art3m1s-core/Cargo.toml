@@ -1,7 +1,8 @@
 [package]
 name = "shinki-emu-art3m1s-core"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.98"
 license = "MPL-2.0"
 build = "build.rs"
 

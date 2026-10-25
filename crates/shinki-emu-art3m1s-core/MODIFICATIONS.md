@@ -3,8 +3,8 @@
 ## 固定来源
 
 - 上游：[Alphaly2K/art3m1s-core](https://github.com/Alphaly2K/art3m1s-core)；fork：[Project-Shinkirou/art3m1s-core](https://github.com/Project-Shinkirou/art3m1s-core) 的 `shinki` 分支，ShinkiEMU 以 submodule `ThirdParty/art3m1s-core` 固定。
-- 上游 HEAD（2026-10-17 核对，0.4.0）：`ad90a62cb192b119b7cf8589aa7f87a94bd747c8`。
-- `shinki` 分支由上述 HEAD 加单个适配提交组成，包含原生核心修改与本目录的嵌入适配 crate `shinki-emu-art3m1s-core`；主仓不再保留 Artemis 适配源码。此前分步发布的历史（[`ae967d8`](https://github.com/Project-Shinkirou/art3m1s-core/commit/ae967d8446fe99b97f6e1df93fb1b61d8ada2040)、[`be82d5e`](https://github.com/Project-Shinkirou/art3m1s-core/commit/be82d5e0bbafcef55a530f69e5b9358094dbd671)）已合并进该提交，源码内容不变。
+- 稳定发布 `v0.4.0-fix.1`：`13bbc8bf2bc36556f9037a65a4fcc3a8c239d07a`，已包含在现有 `shinki` 历史中，无需重复合并。
+- `shinki-latest` 保留原生修复与嵌入适配历史。适配 crate 使用 Rust 1.98、edition 2024；不修改上游 crate 的 edition。
 - 来源历史、Lua 5.1、NativeVulkan/NativeMetal、文字、FFmpeg 9 与许可证保留。
 
 ## 差异分类
