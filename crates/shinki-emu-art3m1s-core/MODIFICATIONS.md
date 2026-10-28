@@ -28,7 +28,8 @@
 
 会话专属 native owner 创建、驱动和销毁原 VM、Vulkan/Metal、FFmpeg、资源与存档。上游没有设备 mixer，沿用现有 SDK Symphonia/Kira 解码混音，改由该会话的 Kira CPAL backend 持有真实设备；设备失败直接返回错误，不选 NullAudio。取消独立设置原子状态、唤醒 owner 并失效阻塞的 Host window 服务；关闭等待 owner 和音频 worker，库继续驻留。未支持的原生 UI/media 命令仍明确报错。
 
-Kira 保持 0.12.2，以发布来源 `e9cbb4608237bb339c3eaf498571000e6cce35ca` 为基线，使用独立通用修复 [Project-Shinkirou/kira@7d8961b20bce2ab8fd43b4bb34150d7e2898785c](https://github.com/Project-Shinkirou/kira/commit/7d8961b20bce2ab8fd43b4bb34150d7e2898785c)。原 CPAL stream-manager 丢弃 JoinHandle，仅 drop manager 不足以证明关闭。native 音频 owner 在成功、错误和 panic 退出均显式 `stop_and_join`，等待设备 callback/stream-manager 资源析构后才退出；普通 Kira Drop 仍非阻塞。Artemis 仅使用 StaticSoundData，不引入未使用的 StreamingSoundData scheduler 修改。workspace 与 SDK 必须统一此精确 Kira 来源，避免 StaticSoundData 跨 crate 实例不兼容。
+Kira 采用 `0.12.5`，以发布来源 `v0.12.5` 为基线，使用重放到该版本的 native-owner 生命周期修复 [Project-Shinkirou/kira@d3b2c85160361adcd7c899bfd91c09b31cf7979c](https://github.com/Project-Shinkirou/kira/commit/d3b2c85160361adcd7c899bfd91c09b31cf7979c)。该补丁新增 `stop_and_join`、可 join 的 stream-manager worker、spawn/panic 错误及生命周期测试；Artemis 的 `audio::mixer::run` 在所有退出路径调用 `manager.backend_mut().stop_and_join()`。Artemis 与 ShinkiEMU workspace 统一使用该 0.12.5 revision，避免 `StaticSoundData` 跨 crate 实例不兼容。
+
 
 音频取消使用独立结果：在源读取之间或 SDK 解码中取消时退出播放任务，再停止并 join 设备；不把正常关闭误报为 mixer 容量错误。只识别 SDK 的 `SHINKI_EMU_AUDIO_CANCELLED`，同时发生的真实读取/解码错误仍保留。音频命令发送区分成功入队、取消和队列故障；取消后 native owner 停止派发并走关闭路径，避免音频 worker 先退出时把正常关闭误报为 `SHINKI_EMU_ARTEMIS_AUDIO_QUEUE`。没有取消的队列断开及 join 后的真实 worker 错误仍返回失败。无窗口 Host 拒绝保留具体 `window.title` / `window.pointer` 操作，不跳过原生请求。
 

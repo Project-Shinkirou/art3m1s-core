@@ -64,5 +64,5 @@ glow = "0.16"
 members = ["crates/shinki-emu-art3m1s-core"]
 
 [patch.crates-io]
-kira = { git = "https://github.com/Project-Shinkirou/kira.git", rev = "7d8961b20bce2ab8fd43b4bb34150d7e2898785c" }
+kira = { git = "https://github.com/Project-Shinkirou/kira.git", rev = "d3b2c85160361adcd7c899bfd91c09b31cf7979c" }
 cpal = { git = "https://github.com/Project-Shinkirou/cpal.git", rev = "ecfda841a9140d60bbec1630d47ca91f1a77b8f3" }

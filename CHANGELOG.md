@@ -22,6 +22,8 @@
 - 新增 callback-free host events v1：日志、media、UI、字体、窗口状态和文本替换改为拉取/推送接口，宿主不再需要向 core 保存 Dart callback trampoline。
 - 新增 FFI 导出 allowlist 检查脚本，release 构建出现额外 `art3m1s_*` 导出时直接失败。
 
+- Audited the Kira `0.12.2` compatibility pin: Artemis depends on Project-Shinkirou's `stop_and_join` CPAL worker lifetime fix, so migration to workspace Kira `0.12.5` requires replaying that patch on the `v0.12.5` base first.
+
 ### 兼容
 
 - native video import/surface、`video_gl_*`、截图、render/output size、upscale mode/render scale、HLSL shader 和窗口方向通知暂不进入 v1 函数表；需要恢复时先设计新的版本化入口。
