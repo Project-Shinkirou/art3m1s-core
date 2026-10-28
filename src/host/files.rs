@@ -1188,4 +1188,25 @@ mod tests {
         let _ = fs::remove_dir_all(&root_a);
         let _ = fs::remove_dir_all(&root_b);
     }
+    #[test]
+    fn savepath_prefix_is_resolved_once() {
+        let root = std::env::temp_dir().join(format!(
+            "art3m1s-savepath-prefix-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let resources = HostResources::new();
+        resources.mount_directory(&root).unwrap();
+        resources.set_save_dir(Some(&root)).unwrap();
+
+        resources
+            .write("savedata/save0001.dat", b"slot")
+            .unwrap();
+
+        assert_eq!(fs::read(root.join("savedata/save0001.dat")).unwrap(), b"slot");
+        assert!(!root.join("savedata/savedata/save0001.dat").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
 }
