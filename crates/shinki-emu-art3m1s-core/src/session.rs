@@ -9,15 +9,15 @@ use art3m1s_core::{
     backend::BackendSelection, host_events::HostEvents, host_files::HostResources,
     runtime::CoreRuntime,
 };
-use shinki_emu_abi::*;
 use parking_lot::Mutex;
+use shinki_emu_abi::*;
 use std::{
     ops::ControlFlow,
     path::PathBuf,
     sync::{
+        Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc::{self, Receiver, SyncSender},
-        Arc,
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -267,10 +267,10 @@ pub(crate) fn project_resources(
             Err(error) => mount_error = Some(error),
         }
     }
-    if !extra_archive.is_empty() {
-        if let Some(error) = mount_error {
-            return Err(error::engine(error));
-        }
+    if !extra_archive.is_empty()
+        && let Some(error) = mount_error
+    {
+        return Err(error::engine(error));
     }
     Err(error::invalid(
         "SHINKI_EMU_ARTEMIS_PROJECT_INI",
@@ -518,7 +518,10 @@ impl Runtime {
                     })?;
                     state.identity.output_epoch =
                         state.identity.output_epoch.checked_add(1).ok_or_else(|| {
-                            error::invalid("SHINKI_EMU_ARTEMIS_GENERATION", "output epoch exhausted")
+                            error::invalid(
+                                "SHINKI_EMU_ARTEMIS_GENERATION",
+                                "output epoch exhausted",
+                            )
                         })?;
                     state.pixels = None;
                     state.identity.generation = 0;
@@ -545,43 +548,43 @@ impl Runtime {
                 }
                 ControlFlow::Continue(false) => {}
             }
-            if pending {
-                if let Some(slot) = pool.iter_mut().find(|slot| {
+            if pending
+                && let Some(slot) = pool.iter_mut().find(|slot| {
                     slot.as_ref()
                         .is_none_or(|pixels| Arc::strong_count(pixels) == 1)
-                }) {
-                    let pixels = slot.get_or_insert_with(|| Arc::new(Vec::new()));
-                    let bytes = Arc::get_mut(pixels).unwrap();
-                    bytes.resize(self.rt.pixel_buffer_size(), 0);
-                    self.rt
-                        .try_capture_frame_into(bytes)
-                        .map_err(error::engine)?;
-                    let info = surface(self.rt.stage_width(), self.rt.stage_height());
-                    info.validate().map_err(|_| {
-                        error::invalid("SHINKI_EMU_ARTEMIS_FRAME_SIZE", "invalid complete frame")
-                    })?;
-                    let mut state = shared.lock();
-                    if state.info.logical != info.logical || state.info.raster != info.raster {
-                        state.identity.output_epoch =
-                            state.identity.output_epoch.checked_add(1).ok_or_else(|| {
-                                error::invalid(
-                                    "SHINKI_EMU_ARTEMIS_GENERATION",
-                                    "output epoch exhausted",
-                                )
-                            })?;
-                    }
-                    state.info = info;
-                    state.identity.generation =
-                        state.identity.generation.checked_add(1).ok_or_else(|| {
+                })
+            {
+                let pixels = slot.get_or_insert_with(|| Arc::new(Vec::new()));
+                let bytes = Arc::get_mut(pixels).unwrap();
+                bytes.resize(self.rt.pixel_buffer_size(), 0);
+                self.rt
+                    .try_capture_frame_into(bytes)
+                    .map_err(error::engine)?;
+                let info = surface(self.rt.stage_width(), self.rt.stage_height());
+                info.validate().map_err(|_| {
+                    error::invalid("SHINKI_EMU_ARTEMIS_FRAME_SIZE", "invalid complete frame")
+                })?;
+                let mut state = shared.lock();
+                if state.info.logical != info.logical || state.info.raster != info.raster {
+                    state.identity.output_epoch =
+                        state.identity.output_epoch.checked_add(1).ok_or_else(|| {
                             error::invalid(
                                 "SHINKI_EMU_ARTEMIS_GENERATION",
-                                "frame generation exhausted",
+                                "output epoch exhausted",
                             )
                         })?;
-                    state.pixels = Some(pixels.clone());
-                    state.timestamp_ns = started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
-                    pending = false;
                 }
+                state.info = info;
+                state.identity.generation =
+                    state.identity.generation.checked_add(1).ok_or_else(|| {
+                        error::invalid(
+                            "SHINKI_EMU_ARTEMIS_GENERATION",
+                            "frame generation exhausted",
+                        )
+                    })?;
+                state.pixels = Some(pixels.clone());
+                state.timestamp_ns = started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
+                pending = false;
             }
             if self.rt.is_exit_requested() {
                 break;
