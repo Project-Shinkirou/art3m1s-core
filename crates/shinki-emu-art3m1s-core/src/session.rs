@@ -295,9 +295,9 @@ impl Runtime {
         resources
             .set_save_dir(Some(&save_dir))
             .map_err(error::engine)?;
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         let backend = BackendSelection::NativeMetal;
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
         let backend = BackendSelection::NativeVulkanHardware;
         let mut rt = CoreRuntime::create(1280, 720, backend).map_err(error::engine)?;
         platform.check(epoch)?;

@@ -11,6 +11,15 @@ ffmpeg-next = { version = "9.0.0", optional = true, default-features = false, fe
     "software-scaling",
     "software-resampling",
 ] }
+
+[target.'cfg(any(target_os = "android", target_os = "ios", target_os = "macos"))'.dependencies]
+ffmpeg-next = { version = "9.0.0", optional = true, default-features = false, features = [
+    "codec",
+    "format",
+    "software-scaling",
+    "software-resampling",
+    "static",
+] }
 libc = { version = "0.2", optional = true }
 
 [features]

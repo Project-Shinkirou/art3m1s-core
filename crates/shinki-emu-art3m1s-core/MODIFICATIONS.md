@@ -7,6 +7,8 @@
 - `shinki-latest` 保留原生修复与嵌入适配历史。适配 crate 使用 Rust 1.98、edition 2024；不修改上游 crate 的 edition。
 - 来源历史、Lua 5.1、NativeVulkan/NativeMetal、文字、FFmpeg 9 与许可证保留。
 
+跨平台补充：macOS 与 iOS（设备及模拟器）统一选择 NativeMetal；Android 保持 NativeVulkanHardware。移动端与 Apple 目标使用 FFmpeg 7.1.2 静态依赖闭包，由 ShinkiEMU xtask 提供目标安装前缀。
+
 ## 差异分类
 
 | 类别 | 当前内容 | 处置 |
