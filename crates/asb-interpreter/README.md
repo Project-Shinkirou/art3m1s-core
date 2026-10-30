@@ -179,10 +179,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 测试
 
+所有平台统一使用 Luau，无需选择 backend feature。兼容层提供 Artemis 脚本使用的 Lua 5.1 API（包括 `string.gfind`、`table.maxn` 和宿主文件写入）。
+
 ```bash
 cargo fmt
 cargo test --all-targets
-cargo test --no-default-features --features backend-luau --lib --tests
 ```
 
 不依赖游戏资源的解释器回归应使用内联脚本。需要真实游戏脚本的 runtime 兼容性

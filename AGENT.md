@@ -33,7 +33,7 @@ cargo fmt --check
 ./scripts/test-all.sh
 ```
 
-`test-all.sh` 覆盖 core、Lua 5.1/Luau、两个 E-Mote crate 和 PFS crate。子 crate 不要仅靠顶层 `cargo test` 代替验证。
+`test-all.sh` 覆盖 core、Luau 解释器、两个 E-Mote crate 和 PFS crate。子 crate 不要仅靠顶层 `cargo test` 代替验证。
 
 macOS 硬件 CGL 测试应按脚本单独运行：
 

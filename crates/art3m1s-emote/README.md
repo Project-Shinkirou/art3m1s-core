@@ -50,7 +50,7 @@ validates the decrypted Adler-32 checksum before reading the object tree.
 
 The core integration adds:
 
-- Lua51 and Luau userdata for the engine and E-Mote layer methods
+- Luau userdata for the engine and E-Mote layer methods
 - current/pending instance promotion for Artemis transitions
 - lazy DXT5-to-RGBA atlas uploads with bounded command history
 - 4x4 deformation grids expanded to dynamic GL triangle lists

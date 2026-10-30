@@ -2,10 +2,10 @@
 
 ## 固定来源
 
-- 上游：[Alphaly2K/art3m1s-core](https://github.com/Alphaly2K/art3m1s-core)；fork：[Project-Shinkirou/art3m1s-core](https://github.com/Project-Shinkirou/art3m1s-core) 的 `shinki` 分支，ShinkiEMU 以 submodule `ThirdParty/art3m1s-core` 固定。
+- 上游：[Alphaly2K/art3m1s-core](https://github.com/Alphaly2K/art3m1s-core)；fork：[Project-Shinkirou/art3m1s-core](https://github.com/Project-Shinkirou/art3m1s-core)。ShinkiEMU 通过 `build/cores.toml` 的精确 Git revision 准备 `ThirdParty/art3m1s-core`，Luau 迁移提交发布在 `shinki-android-isolation` 分支。
 - 稳定发布 `v0.4.0-fix.1`：`13bbc8bf2bc36556f9037a65a4fcc3a8c239d07a`，已包含在现有 `shinki` 历史中，无需重复合并。
 - `shinki-latest` 保留原生修复与嵌入适配历史。适配 crate 使用 Rust 1.98、edition 2024；不修改上游 crate 的 edition。
-- 来源历史、Lua 5.1、NativeVulkan/NativeMetal、文字、FFmpeg 9 与许可证保留。
+- 来源历史、NativeVulkan/NativeMetal、文字、FFmpeg 9 与许可证保留。所有平台的脚本运行时统一迁移到 Luau，移除 Lua 5.1 backend 与选择 feature，兼容层保留 Artemis 使用的旧 Lua API。
 
 跨平台补充：macOS 与 iOS（设备及模拟器）统一选择 NativeMetal；Android 保持 NativeVulkanHardware。移动端与 Apple 目标使用 FFmpeg 7.1.2 静态依赖闭包，由 ShinkiEMU xtask 提供目标安装前缀。
 
@@ -65,7 +65,7 @@ cargo xtask build --target x86_64-pc-windows-msvc --core art3m1s-core --release
 
 上述命令从 ShinkiEMU 根目录运行。独立构建从 fork 根目录运行 `cargo build --locked --release -p shinki-emu-art3m1s-core`。适配 crate 的 `build.rs` 生成 `OUT_DIR/core-build.json`，记录目标、profile、ABI 及 fork 内的许可文件；许可变化触发重新生成。xtask 读取 Cargo 消息中的清单与真实 cdylib 路径。
 
-`shinki-emu-abi`（`diagnostic-bridge`）、`shinki-emu-sdk`（`default-features = false, features = ["audio"]`）与 host-side `shinki-emu-build` 固定 `Project-Shinkirou/ShinkiEMU@cb8d9dd22d7d0ab129085b324c94d6dc81fa19e3`，不引入 Luau；Artemis 仍只用 Lua 5.1。SDK 的共享底层固定 `Project-Shinkirou/RoukakuEngine@ba28948b5dd00188fe53a24881a64dcaf0c69e2a`。根 workspace 的 `[patch.crates-io]` 保留 Kira `Project-Shinkirou/kira@7d8961b2` 与 CPAL 0.15.3 [Project-Shinkirou/cpal@ecfda841](https://github.com/Project-Shinkirou/cpal/commit/ecfda841a9140d60bbec1630d47ca91f1a77b8f3)（WASAPI 关闭修复并对齐 ALSA 绑定）。
+`shinki-emu-abi`（`diagnostic-bridge`）、`shinki-emu-sdk`（`default-features = false, features = ["audio"]`）与 host-side `shinki-emu-build` 固定 `Project-Shinkirou/ShinkiEMU@9cd899babbb54cbc84c3e9fbddfe192c2f9200c8`。Artemis 与 Manager 共用 Luau，Android 静态链接不再引入第二种 Lua runtime。根 workspace 的 `[patch.crates-io]` 保留与该 SDK 精确要求一致的 Kira 0.12.2 `Project-Shinkirou/kira@7d8961b2` 与 CPAL 0.15.3 [Project-Shinkirou/cpal@ecfda841](https://github.com/Project-Shinkirou/cpal/commit/ecfda841a9140d60bbec1630d47ca91f1a77b8f3)（WASAPI 关闭修复并对齐 ALSA 绑定）。
 
 Windows 构建使用 MSVC、`VCPKG_ROOT` 指向 FFmpeg 9 的 vcpkg 安装（`x64-windows`）、`LIBCLANG_PATH` 指向 libclang。产物为 `shinki_emu_art3m1s_core.dll`，导出 `shinki_emu_query`；所需 FFmpeg DLL 随核心交付。静态链接进宿主时启用 `static-core`，经 `artemis_query` 取得同一 `CoreApi`。Windows shaderc 使用映射短路径（如 `subst`）规避 MSVC 对象路径上限。
 

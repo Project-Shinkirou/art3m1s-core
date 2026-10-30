@@ -4,13 +4,8 @@ version = "0.2.0"
 license = "MPL-2.0"
 edition = "2024"
 
-[features]
-default = ["backend-lua51"]
-backend-lua51 = ["mlua/lua51"]
-backend-luau = ["mlua/luau"]
-
 [dependencies]
-mlua = { version = "0.12", default-features = false, features = ["send", "serialize", "vendored"] }
+mlua = { version = "0.12", default-features = false, features = ["luau", "send", "serialize", "vendored"] }
 asb-decrypt = { git = "https://github.com/Alphaly2K/asb-decrypt" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

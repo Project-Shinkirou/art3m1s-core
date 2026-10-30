@@ -343,17 +343,10 @@ fn json_to_lua_value(lua: &Lua, value: serde_json::Value) -> mlua::Result<mlua::
 }
 
 fn lua_integer_value(value: i64) -> mlua::Value {
-    #[cfg(feature = "backend-luau")]
-    {
-        if (i32::MIN as i64..=i32::MAX as i64).contains(&value) {
-            mlua::Value::Integer(value as mlua::Integer)
-        } else {
-            mlua::Value::Number(value as f64)
-        }
-    }
-    #[cfg(not(feature = "backend-luau"))]
-    {
+    if (i32::MIN as i64..=i32::MAX as i64).contains(&value) {
         mlua::Value::Integer(value as mlua::Integer)
+    } else {
+        mlua::Value::Number(value as f64)
     }
 }
 
@@ -476,20 +469,16 @@ impl Interpreter {
             eprintln!("警告: 注入算术强制转换失败: {:?}", e);
         }
 
-        // 注入探针：注册全局错误追踪器，记录最后发生的 Lua 错误及其调用栈。
-        if let Err(e) = lua
-            .load(
-                r#"
-            __artemis_last_error = nil
-            function __artemis_traceback(msg)
-                __artemis_last_error = msg .. "\n" .. debug.traceback("", 2)
-                return msg
-            end
-        "#,
-            )
-            .exec()
-        {
-            eprintln!("警告: 注入错误探针失败: {:?}", e);
+        // Luau intentionally omits Lua's debug library. Keep the diagnostic
+        // probe available on every backend without requiring debug.traceback.
+        let traceback = lua.create_function(|lua, message: String| {
+            lua.globals().set("__artemis_last_error", message.clone())?;
+            Ok(message)
+        });
+        if let Err(e) = traceback.and_then(|function| {
+            lua.globals().set("__art3m1s_traceback", function)
+        }) {
+            eprintln!("警告: 注册错误探针失败: {:?}", e);
         }
 
         let variables = Arc::new(Mutex::new(VariableStore::new()));
@@ -535,7 +524,6 @@ impl Interpreter {
         // 共享同一份变量存储给 engine 上下文，使 e:var 能读到解释器写入的变量。
         engine_ctx_inner.variables = Some(Arc::clone(&variables));
         let engine_ctx = Arc::new(Mutex::new(engine_ctx_inner));
-        #[cfg(feature = "backend-luau")]
         if let Err(e) = crate::luau_polyfill::install(&lua, Arc::clone(&engine_ctx)) {
             eprintln!("警告: 注入 Luau 兼容层失败: {:?}", e);
         }
@@ -4319,7 +4307,6 @@ mod tests {
         assert_eq!(vars.get("fs"), Some(&Value::Int(1)));
     }
 
-    #[cfg(feature = "backend-luau")]
     #[test]
     fn luau_polyfills_cover_maxn_os_and_host_file_write() {
         let writes = Arc::new(Mutex::new(Vec::<(String, Vec<u8>)>::new()));
@@ -4354,7 +4341,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "backend-luau")]
     #[test]
     fn luau_string_gfind_supports_artemis_split_helper() {
         let interpreter = Interpreter::new(InterpreterConfig::default());
@@ -4398,12 +4384,10 @@ mod tests {
         assert_eq!(parts.get::<String>(3).unwrap(), "gamma");
     }
 
-    #[cfg(feature = "backend-luau")]
     struct TestCallbacks {
         writes: Arc<Mutex<Vec<(String, Vec<u8>)>>>,
     }
 
-    #[cfg(feature = "backend-luau")]
     impl EngineCallbacks for TestCallbacks {
         fn debug(&self, _level: i32, _data: &str, _raw: bool) {}
         fn enqueue_tag(&self, _tag: String, _params: HashMap<String, String>) {}
