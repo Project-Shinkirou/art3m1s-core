@@ -9,6 +9,8 @@
 
 跨平台补充：macOS 与 iOS（设备及模拟器）统一选择 NativeMetal；Android 保持 NativeVulkanHardware。移动端与 Apple 目标使用 FFmpeg 7.1.2 静态依赖闭包，由 ShinkiEMU xtask 提供目标安装前缀。
 
+iPhoneSimulator SDK 不提供 MetalFX.framework，包括 `x86_64-apple-ios`。核心与 renderer 的构建脚本均跳过模拟器的 MetalFX 链接；Metal 后端在编译期选择已有 native render / linear present 路径。iOS device 与 macOS 保留 MetalFX weak link、Objective-C 类查询与 GPU 支持检查，不支持的设备仍走已有 native render。
+
 ## 差异分类
 
 | 类别 | 当前内容 | 处置 |

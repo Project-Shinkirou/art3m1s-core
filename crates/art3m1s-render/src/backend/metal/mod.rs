@@ -394,7 +394,10 @@ impl MetalBackend {
         let queue = device
             .newCommandQueue()
             .ok_or_else(|| "failed to create Metal command queue".to_string())?;
-        let metalfx_supported = AnyClass::get(c"MTLFXSpatialScalerDescriptor")
+        let metalfx_supported = !cfg!(all(
+            target_os = "ios",
+            any(target_arch = "x86_64", target_abi = "sim")
+        )) && AnyClass::get(c"MTLFXSpatialScalerDescriptor")
             .map(|class| unsafe { msg_send![class, supportsDevice: &*device] })
             .unwrap_or(false);
         log::info!(

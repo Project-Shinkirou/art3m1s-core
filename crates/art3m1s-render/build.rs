@@ -4,7 +4,9 @@ fn main() {
         && std::env::var_os("CARGO_FEATURE_METAL").is_some()
     {
         let target = std::env::var("TARGET").unwrap_or_default();
-        let simulator = target.contains("ios-sim") || target.contains("simulator");
+        let simulator = target == "x86_64-apple-ios"
+            || target.contains("ios-sim")
+            || target.contains("simulator");
         if !simulator {
             println!("cargo:rustc-link-arg=-Wl,-weak_framework,MetalFX");
         }

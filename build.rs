@@ -39,7 +39,9 @@ fn main() {
         // The iPhoneSimulator SDK does not ship MetalFX.framework, and Apple's
         // linker still requires a weak framework to exist at link time.
         let target = std::env::var("TARGET").unwrap_or_default();
-        let simulator = target.contains("ios-sim") || target.contains("simulator");
+        let simulator = target == "x86_64-apple-ios"
+            || target.contains("ios-sim")
+            || target.contains("simulator");
         if !simulator {
             println!("cargo:rustc-link-arg=-Wl,-weak_framework,MetalFX");
         }
