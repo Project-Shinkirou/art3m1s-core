@@ -9,6 +9,8 @@
 
 跨平台补充：macOS 与 iOS（设备及模拟器）统一选择 NativeMetal；Android 保持 NativeVulkanHardware。移动端与 Apple 目标使用 FFmpeg 7.1.2 静态依赖闭包，由 ShinkiEMU xtask 提供目标安装前缀。
 
+Android 动态核心通过 `CoreApi.extension("shinki.emu.android_context", 1)` 在会话启动前绑定当前库的 `ndk_context`，供 CPAL 使用。宿主传入进程生命周期内有效的 `JavaVM*` 与 Application JNI 全局引用，同组参数可重复调用。静态注册与上游独立宿主不变。
+
 ## 差异分类
 
 | 类别 | 当前内容 | 处置 |

@@ -1,4 +1,6 @@
 //! Artemis native embedded C ABI. VM, GPU, media, save and scheduling stay native.
+#[cfg(all(target_os = "android", not(feature = "static-core")))]
+mod android_context;
 mod audio;
 mod error;
 mod events;

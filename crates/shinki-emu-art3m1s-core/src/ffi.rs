@@ -28,7 +28,7 @@ static METADATA: LazyLock<Metadata> = LazyLock::new(|| Metadata {
     formats: [Bytes::new(b"artemis.pfs")],
 });
 static PROBE_ID: Mutex<String> = Mutex::new(String::new());
-fn failure(out: *mut Error, status: Status, code: &str, message: &str) -> Status {
+pub(super) fn failure(out: *mut Error, status: Status, code: &str, message: &str) -> Status {
     if !out.is_null() {
         unsafe { (*out).set(code, message) };
     }
@@ -205,6 +205,15 @@ unsafe extern "C" fn open(
             INVALID_ARGUMENT,
             "SHINKI_EMU_ARTEMIS_RENDER_EXTENT",
             "render extent is not configurable for Artemis",
+        );
+    }
+    #[cfg(all(target_os = "android", not(feature = "static-core")))]
+    if !crate::android_context::initialized() {
+        return failure(
+            error,
+            INVALID_STATE,
+            "SHINKI_EMU_ARTEMIS_ANDROID_CONTEXT",
+            "activate the Android context extension before opening a session",
         );
     }
     boundary(error, || {
@@ -406,13 +415,19 @@ unsafe extern "C" fn close(session: Session, error: *mut Error) -> Status {
         owner.shutdown()
     })
 }
-unsafe extern "C" fn extension(_: Bytes, _: u32, out: *mut *const c_void) -> Status {
+unsafe extern "C" fn extension(id: Bytes, version: u32, out: *mut *const c_void) -> Status {
     if out.is_null() {
         return INVALID_ARGUMENT;
     }
     unsafe {
         *out = ptr::null();
     }
+    #[cfg(all(target_os = "android", not(feature = "static-core")))]
+    if let Some(table) = unsafe { crate::android_context::extension(id, version) } {
+        unsafe { *out = table };
+        return OK;
+    }
+    let _ = (id, version);
     UNSUPPORTED
 }
 static API: CoreApi = CoreApi {

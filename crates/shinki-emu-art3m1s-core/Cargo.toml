@@ -29,6 +29,9 @@ parking_lot = "0.12"
 [target.'cfg(any(target_os = "windows", target_os = "linux", target_os = "android"))'.dependencies]
 art3m1s-core = { path = "../..", default-features = false, features = ["vulkan-backend"] }
 
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = "0.1.1"
+
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 art3m1s-core = { path = "../..", default-features = false, features = ["metal-backend"] }
 

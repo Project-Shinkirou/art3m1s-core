@@ -4631,6 +4631,7 @@ dependencies = [
  "art3m1s-core",
  "encoding_rs",
  "kira 0.12.2",
+ "ndk-context",
  "parking_lot",
  "serde",
  "serde_json",
