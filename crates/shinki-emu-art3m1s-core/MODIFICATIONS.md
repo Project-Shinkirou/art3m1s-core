@@ -37,6 +37,8 @@ Kira 采用 `0.12.5`，以发布来源 `v0.12.5` 为基线，使用重放到该�
 
 上游窗口位只来自 `WINDOW_QUERY_STATE` 的真实结果：bit0 为全屏、bit1 为最小化。首次运行及一批 `WindowState` 通知处理完后查询，不逐 tick 查询，也不把 `focused` 或 `suspended` 转成这些位。Host 必须同时提供有效 `MODE` 和 `MINIMIZED`；无窗口、不支持查询或返回字段不完整时明确报 `window.query_state` 错误。查询在 snapshot 锁外进行，取消结果结束当前任务并正常关闭，不发布缺失状态。原有失焦、挂起和显式暂停策略保持不变。
 
+读档或重新启动成功后，适配层把新 context epoch 交给 Host。Host 拒绝旧上下文的窗口请求，新上下文继续工作。更换输出代次不会使已交付的 CPU 帧租约失效，也不会改变存档目录或格式。
+
 配置保留 `archive` 文件选择，并增加默认空的 `extra_archive`。配置按字段 ID 解析，顺序不构成 ABI 契约；描述符报告实际 schema 长度。`extra_archive` 是基包父目录内、最多 4096 字节的相对文件路径，由原生 `HostResources::mount_pfs_with_extra` 校验路径及独立 PFS 身份。保留原基包和活动数字卷排序，显式补丁在其后覆盖；散文件、内存 override 和存档优先级不变。不扫描备份、不重命名原文件、不启动转换、不复制旧存档。空值完全保留原行为。
 
 C ABI v3 描述符声明显示名 `Art3m1s`、引擎名 `Artemis`，只声明 `CAP_CPU_SURFACE`，不声明可调渲染分辨率；`open` 收到非 0×0 的 `render_extent` 时返回 `SHINKI_EMU_ARTEMIS_RENDER_EXTENT`。两个配置字段使用中文标签、说明和分组“文件”，并带 `CONFIG_FLAG_FILE_PATH | CONFIG_FLAG_GAME_RELATIVE`；解析与挂载规则不变。

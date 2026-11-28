@@ -507,24 +507,7 @@ impl Runtime {
             }
             pending |= self.rt.try_advance_frame(elapsed).map_err(error::engine)?;
             if self.rt.take_timeline_reset() {
-                let old = {
-                    let mut state = shared.lock();
-                    let old = context.load(Ordering::Acquire);
-                    let next = old.checked_add(1).ok_or_else(|| {
-                        error::invalid("SHINKI_EMU_ARTEMIS_GENERATION", "context epoch exhausted")
-                    })?;
-                    state.identity.output_epoch =
-                        state.identity.output_epoch.checked_add(1).ok_or_else(|| {
-                            error::invalid("SHINKI_EMU_ARTEMIS_GENERATION", "output epoch exhausted")
-                        })?;
-                    state.pixels = None;
-                    state.identity.generation = 0;
-                    context.store(next, Ordering::Release);
-                    old
-                };
-                if let Some(invalidate) = platform.0.invalidate {
-                    unsafe { invalidate(platform.0.context, epoch, old) };
-                }
+                publish_timeline_reset(shared, context, platform, epoch)?;
                 pending = true;
                 remainder = 0;
                 last = Instant::now();
@@ -610,5 +593,109 @@ pub(crate) fn surface(width: u32, height: u32) -> SurfaceInfo {
         logical: Extent { width, height },
         raster: Extent { width, height },
         stride: u64::from(width) * 4,
+    }
+}
+
+fn publish_timeline_reset(
+    shared: &Mutex<Snapshot>,
+    context: &AtomicU64,
+    platform: Platform,
+    epoch: u64,
+) -> NativeResult<()> {
+    let next = {
+        let mut state = shared.lock();
+        let next = context.load(Ordering::Acquire).checked_add(1).ok_or_else(|| {
+            error::invalid("SHINKI_EMU_ARTEMIS_GENERATION", "context epoch exhausted")
+        })?;
+        state.identity.output_epoch = state.identity.output_epoch.checked_add(1).ok_or_else(|| {
+            error::invalid("SHINKI_EMU_ARTEMIS_GENERATION", "output epoch exhausted")
+        })?;
+        state.pixels = None;
+        state.identity.generation = 0;
+        context.store(next, Ordering::Release);
+        next
+    };
+    if let Some(invalidate) = platform.0.invalidate {
+        // The host installs the new epoch and retires requests on the old one.
+        unsafe { invalidate(platform.0.context, epoch, next) };
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::c_void;
+
+    #[test]
+    fn timeline_reset_retires_old_context_and_accepts_new_window_request() {
+        const SESSION: u64 = 3;
+
+        unsafe extern "C" fn invalidate(host: *mut c_void, session: u64, next: u64) {
+            if session == SESSION {
+                unsafe { &*host.cast::<AtomicU64>() }.store(next, Ordering::Release);
+            }
+        }
+
+        unsafe extern "C" fn request(
+            host: *mut c_void,
+            request: *const WindowRequest,
+            result: *mut WindowResult,
+            _: *mut Error,
+        ) -> Status {
+            let (host, request, result) =
+                unsafe { (&*host.cast::<AtomicU64>(), &*request, &mut *result) };
+            if request.session_epoch != SESSION
+                || request.context_epoch != host.load(Ordering::Acquire)
+            {
+                return CANCELLED;
+            }
+            if request.kind != WINDOW_QUERY_STATE {
+                return UNSUPPORTED;
+            }
+            result.fullscreen = FULLSCREEN_BORDERLESS;
+            result.minimized = 1;
+            result.valid_fields = WINDOW_RESULT_MODE | WINDOW_RESULT_MINIMIZED;
+            OK
+        }
+
+        let host = AtomicU64::new(7);
+        let context = AtomicU64::new(7);
+        let platform = Platform(
+            WindowService {
+                context: (&raw const host).cast_mut().cast(),
+                request: Some(request),
+                invalidate: Some(invalidate),
+            },
+            CancellationService {
+                context: std::ptr::null_mut(),
+                is_cancelled: None,
+            },
+        );
+        let lease = Arc::new(vec![16, 32, 64, 255]);
+        let shared = Mutex::new(Snapshot {
+            info: surface(1, 1),
+            identity: FrameIdentity {
+                session_epoch: SESSION,
+                output_epoch: 11,
+                generation: 5,
+            },
+            pixels: Some(lease.clone()),
+            timestamp_ns: 1,
+            state: SESSION_RUNNING,
+            error: None,
+        });
+        let query = |context, request| {
+            crate::platform::query_state(platform, SESSION, context, request).unwrap()
+        };
+        assert!(query(7, 1).is_continue());
+        publish_timeline_reset(&shared, &context, platform, SESSION).unwrap();
+        assert!(query(7, 2).is_break());
+        assert!(query(context.load(Ordering::Acquire), 3).is_continue());
+
+        let state = shared.lock();
+        assert_eq!((state.identity.output_epoch, state.identity.generation), (12, 0));
+        assert!(state.pixels.is_none());
+        assert_eq!(lease.as_slice(), [16, 32, 64, 255]);
     }
 }
